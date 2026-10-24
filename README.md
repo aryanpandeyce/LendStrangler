@@ -69,15 +69,21 @@ We applied Martin Fowler's **Strangler Fig Pattern**:
 
 ---
 
-## Interactive Modernization Dashboard (`apps/web`)
+> **Note on Runtime Modes:**
+> - **Live Demo ([GitHub Pages](https://aryanpandeyce.github.io/LendStrangler/)):** Runs 100% in-browser using the in-memory AMQP broker abstraction and identical TypeScript domain engines. No backend servers or cloud infra required to evaluate the full portfolio experience.
+> - **Local Container Stack:** Real RabbitMQ (AMQP 0-9-1 topic exchanges + management UI on port 15672), 4 isolated microservice containers with dedicated SQLite databases, and gateway facade. `docker compose config` is fully verified.
 
-The repository includes a modern React 18 + Vite + TypeScript fintech dashboard:
+---
 
-1. **Migration Control Room:** Interactive visual topology of the architecture. Toggle route policies live (`LEGACY | NEW | SHADOW | CANARY %`) and watch animated traffic flow redirects.
-2. **Loan Journey:** Originate commercial loans, calculate live reducing-balance EMIs, and watch the multi-service saga choreography unfold in real-time.
-3. **Message Broker & DLQ Inspector:** Monitor queue metrics, trigger simulated disbursement network chaos, and click **"Replay Message"** to recover poison messages from the Dead Letter Queue.
-4. **Shadow Diff Viewer:** Inspect side-by-side comparison tables between Legacy Monolith and Microservice response payloads with latency delta analytics.
-5. **Architecture Docs Reader:** Built-in reader rendering all Architecture Decision Records (ADRs).
+### Dashboard Preview
+
+| Migration Control Room | Loan Journey Saga Timeline |
+| :---: | :---: |
+| ![Migration Control Room](docs/screenshots/01-migration-control-room.png) | ![Loan Journey Saga Timeline](docs/screenshots/03-saga-timeline.png) |
+
+| Broker & DLQ Chaos Inspector | Shadow Diff Viewer |
+| :---: | :---: |
+| ![Broker & DLQ Inspector](docs/screenshots/05-dlq-chaos.png) | ![Shadow Diff Viewer](docs/screenshots/06-shadow-diff.png) |
 
 ---
 
