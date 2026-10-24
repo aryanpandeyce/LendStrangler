@@ -65,7 +65,7 @@ export function createLegacyApp(db: Database) {
     return res.json(loan);
   });
 
-  app.post('/api/loans', (req: Request, res: Response) => {
+  app.post('/api/loans', async (req: Request, res: Response) => {
     const parsed = CreateLoanRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
@@ -74,7 +74,7 @@ export function createLegacyApp(db: Database) {
     const forceDisbursementFailure = req.query.forceDisbursementFailure === 'true';
     const correlationId = res.getHeader('X-Correlation-Id') as string;
 
-    const result = godService.applyLoanSynchronously(parsed.data, {
+    const result = await godService.applyLoanSynchronously(parsed.data, {
       forceDisbursementFailure,
       correlationId,
     });

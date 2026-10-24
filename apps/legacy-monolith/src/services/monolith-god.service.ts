@@ -10,6 +10,8 @@ import {
   DisbursementRecord,
 } from '@lendstrangler/contracts';
 
+import { CreditServiceAclClient } from './credit-acl.client.js';
+
 /**
  * Deliberate Architectural Anti-Pattern: Monolithic "God Service"
  *
@@ -20,7 +22,14 @@ import {
  *    blocks and potentially fails the entire loan creation transaction.
  */
 export class MonolithGodService {
-  constructor(private db: Database) {}
+  private creditAclClient: CreditServiceAclClient;
+
+  constructor(
+    private db: Database,
+    creditAclClient?: CreditServiceAclClient,
+  ) {
+    this.creditAclClient = creditAclClient || new CreditServiceAclClient();
+  }
 
   public getAllLoans(): LoanApplication[] {
     const rows = this.db.prepare('SELECT * FROM applications ORDER BY created_at DESC').all() as Array<{
@@ -116,10 +125,10 @@ export class MonolithGodService {
    * LEGACY TIGHTLY-COUPLED SYNCHRONOUS CHAIN:
    * Submit -> Evaluate Credit -> Execute Bank Disbursement
    */
-  public applyLoanSynchronously(
+  public async applyLoanSynchronously(
     req: CreateLoanRequest,
     options?: { forceDisbursementFailure?: boolean; correlationId?: string },
-  ): LoanApplication {
+  ): Promise<LoanApplication> {
     const applicationId = `app-leg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const applicantId = `usr-${Date.now()}`;
     const baseInterestRate = 10.5;
@@ -150,8 +159,8 @@ export class MonolithGodService {
       now,
     );
 
-    // 2. Synchronous Credit Scoring
-    const creditResult = this.evaluateCreditSynchronously({
+    // 2. Credit Scoring (delegated via Strangler Anti-Corruption Layer)
+    const creditResult = await this.creditAclClient.evaluateCredit({
       applicationId,
       applicantId,
       monthlyIncome: req.monthlyIncome,
@@ -159,7 +168,7 @@ export class MonolithGodService {
       requestedAmount: req.amount,
       tenureMonths: req.tenureMonths,
       baseInterestRate,
-    });
+    }, options?.correlationId);
 
     if (creditResult.decision === 'REJECTED') {
       const rejectionReason = creditResult.reasonCodes.join(', ');
