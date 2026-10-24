@@ -1,0 +1,20 @@
+{
+  "name": "@lendstrangler/messaging",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lendstrangler/contracts": "*",
+    "amqplib": "^0.10.5"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.6",
+    "typescript": "^5.7.3"
+  }
+}
