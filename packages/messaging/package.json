@@ -9,6 +9,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./in-memory": {
+      "types": "./src/in-memory.broker.ts",
+      "import": "./src/in-memory.broker.ts",
+      "default": "./src/in-memory.broker.ts"
     }
   },
   "scripts": {
