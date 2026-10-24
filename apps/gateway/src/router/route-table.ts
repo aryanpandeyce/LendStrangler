@@ -15,31 +15,31 @@ export class RouteTable {
 
     this.routes.set('/api/loans', {
       pathPattern: '/api/loans',
-      mode: 'LEGACY',
+      mode: 'NEW',
       canaryWeightPercent: 0,
       legacyTarget: legacyUrl,
       newTarget: loanUrl,
-      activeService: 'legacy-monolith',
+      activeService: 'loan-service',
       description: 'Loan Application Origination and Portfolio Management',
     });
 
     this.routes.set('/api/credit', {
       pathPattern: '/api/credit',
-      mode: 'LEGACY',
+      mode: 'NEW',
       canaryWeightPercent: 0,
       legacyTarget: legacyUrl,
       newTarget: creditUrl,
-      activeService: 'legacy-monolith',
+      activeService: 'credit-service',
       description: 'Underwriting and Risk Evaluation Engine',
     });
 
     this.routes.set('/api/disbursements', {
       pathPattern: '/api/disbursements',
-      mode: 'LEGACY',
+      mode: 'NEW',
       canaryWeightPercent: 0,
       legacyTarget: legacyUrl,
       newTarget: disbursementUrl,
-      activeService: 'legacy-monolith',
+      activeService: 'disbursement-service',
       description: 'Disbursement Ledger and Bank Transfer Gateway',
     });
   }

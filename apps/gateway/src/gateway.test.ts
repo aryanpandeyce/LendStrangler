@@ -58,10 +58,12 @@ describe('Strangler Gateway & Reverse Proxy Facade Tests', () => {
     // 3. Setup Gateway configured to point to these test servers
     routeTable = new RouteTable();
     routeTable.updateRoute('/api/loans', {
+      mode: 'LEGACY',
       legacyTarget: `http://localhost:${legacyPort}`,
       newTarget: `http://localhost:${newPort}`,
     });
     routeTable.updateRoute('/api/credit', {
+      mode: 'LEGACY',
       legacyTarget: `http://localhost:${legacyPort}`,
       newTarget: `http://localhost:${newPort}`,
     });

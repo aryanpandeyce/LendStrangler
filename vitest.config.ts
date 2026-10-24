@@ -16,6 +16,7 @@ export default defineConfig({
         '**/types.ts',
         '**/event-schemas.ts',
         '**/schemas.ts',
+        '**/server.ts',
         '**/rabbitmq.broker.ts',
       ],
       thresholds: {
