@@ -18,6 +18,7 @@ export default defineConfig({
         '**/schemas.ts',
         '**/server.ts',
         '**/rabbitmq.broker.ts',
+        'apps/web/**',
       ],
       thresholds: {
         lines: 80,

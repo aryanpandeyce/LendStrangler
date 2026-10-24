@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: lendstrangler-rabbitmq
+    ports:
+      - '5672:5672'    # AMQP protocol
+      - '15672:15672'  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - lendstrangler-net
+
+  legacy-monolith:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY apps/legacy-monolith/ apps/legacy-monolith/
+        RUN npm install
+        EXPOSE 3001
+        CMD ["npm", "--workspace=@lendstrangler/legacy-monolith", "start"]
+    container_name: lendstrangler-legacy-monolith
+    environment:
+      PORT_LEGACY: 3001
+      NODE_ENV: production
+    ports:
+      - '3001:3001'
+    networks:
+      - lendstrangler-net
+
+  credit-service:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY services/credit-service/ services/credit-service/
+        RUN npm install
+        EXPOSE 3002
+        CMD ["npm", "--workspace=@lendstrangler/credit-service", "start"]
+    container_name: lendstrangler-credit-service
+    environment:
+      PORT_CREDIT: 3002
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - '3002:3002'
+    networks:
+      - lendstrangler-net
+
+  disbursement-service:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY services/disbursement-service/ services/disbursement-service/
+        RUN npm install
+        EXPOSE 3003
+        CMD ["npm", "--workspace=@lendstrangler/disbursement-service", "start"]
+    container_name: lendstrangler-disbursement-service
+    environment:
+      PORT_DISBURSEMENT: 3003
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      DISBURSEMENT_CHAOS_FAILURE_RATE: "0.0"
+      NODE_ENV: production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - '3003:3003'
+    networks:
+      - lendstrangler-net
+
+  loan-service:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY services/loan-service/ services/loan-service/
+        RUN npm install
+        EXPOSE 3004
+        CMD ["npm", "--workspace=@lendstrangler/loan-service", "start"]
+    container_name: lendstrangler-loan-service
+    environment:
+      PORT_LOAN: 3004
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - '3004:3004'
+    networks:
+      - lendstrangler-net
+
+  gateway:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY apps/gateway/ apps/gateway/
+        RUN npm install
+        EXPOSE 3000
+        CMD ["npm", "--workspace=@lendstrangler/gateway", "start"]
+    container_name: lendstrangler-gateway
+    environment:
+      PORT_GATEWAY: 3000
+      LEGACY_SERVICE_URL: http://legacy-monolith:3001
+      CREDIT_SERVICE_URL: http://credit-service:3002
+      DISBURSEMENT_SERVICE_URL: http://disbursement-service:3003
+      LOAN_SERVICE_URL: http://loan-service:3004
+      NODE_ENV: production
+    depends_on:
+      - legacy-monolith
+      - credit-service
+      - disbursement-service
+      - loan-service
+    ports:
+      - '3000:3000'
+    networks:
+      - lendstrangler-net
+
+  web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        COPY packages/ packages/
+        COPY apps/web/ apps/web/
+        RUN npm install
+        RUN npm --workspace=@lendstrangler/web run build
+        RUN npm install -g serve
+        EXPOSE 5173
+        CMD ["serve", "-s", "apps/web/dist", "-l", "5173"]
+    container_name: lendstrangler-web
+    environment:
+      VITE_DEMO_MODE: "false"
+      VITE_GATEWAY_URL: http://localhost:3000
+    ports:
+      - '5173:5173'
+    networks:
+      - lendstrangler-net
+
+networks:
+  lendstrangler-net:
+    driver: bridge

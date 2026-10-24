@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: LendStrangler API Specification
+  description: API surface for Strangler Facade Gateway, Loan Service, Credit Service, and Disbursement Service.
+  version: 1.0.0
+  contact:
+    name: Aryan Pandey
+    url: https://github.com/aryanpandeyce/LendStrangler
+
+servers:
+  - url: http://localhost:3000
+    description: Strangler Facade Gateway (Ingress)
+  - url: http://localhost:3004
+    description: Loan Service (Direct Microservice)
+  - url: http://localhost:3002
+    description: Credit Service (Direct Microservice)
+  - url: http://localhost:3003
+    description: Disbursement Service (Direct Microservice)
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy and operational.
+
+  /api/loans:
+    get:
+      summary: List all corporate loan applications
+      responses:
+        '200':
+          description: List of applications.
+    post:
+      summary: Originate a new corporate loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLoanRequest'
+      responses:
+        '201':
+          description: Application submitted and saga initiated.
+
+  /api/loans/{id}:
+    get:
+      summary: Get loan application details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Loan application object.
+        '404':
+          description: Loan application not found.
+
+  /api/credit/evaluate:
+    post:
+      summary: Evaluate creditworthiness and compute DTI ratio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditCheckRequest'
+      responses:
+        '200':
+          description: Credit evaluation result with score and risk tier.
+
+  /api/disbursements/transfer:
+    post:
+      summary: Execute bank fund disbursement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisbursementRequest'
+      responses:
+        '200':
+          description: Transfer executed successfully.
+        '502':
+          description: Payment rails transfer failed.
+
+  /admin/routes:
+    get:
+      summary: List current Strangler Gateway routing table
+      responses:
+        '200':
+          description: List of route rules.
+    put:
+      summary: Update route mode or canary traffic percentage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRouteRequest'
+      responses:
+        '200':
+          description: Route updated.
+
+components:
+  schemas:
+    CreateLoanRequest:
+      type: object
+      required:
+        - fullName
+        - email
+        - monthlyIncome
+        - existingMonthlyEmi
+        - amount
+        - tenureMonths
+        - purpose
+      properties:
+        fullName:
+          type: string
+          example: Apex Industrial Logistics
+        email:
+          type: string
+          format: email
+          example: finance@apexlogistics.com
+        monthlyIncome:
+          type: number
+          example: 180000
+        existingMonthlyEmi:
+          type: number
+          example: 15000
+        amount:
+          type: number
+          example: 500000
+        tenureMonths:
+          type: integer
+          example: 36
+        purpose:
+          type: string
+          enum: [HOME_IMPROVEMENT, DEBT_CONSOLIDATION, BUSINESS_EXPANSION, EDUCATION, PERSONAL]
+          example: BUSINESS_EXPANSION
+
+    CreditCheckRequest:
+      type: object
+      required:
+        - applicationId
+        - applicantId
+        - monthlyIncome
+        - existingMonthlyEmi
+        - requestedAmount
+        - tenureMonths
+      properties:
+        applicationId:
+          type: string
+        applicantId:
+          type: string
+        monthlyIncome:
+          type: number
+        existingMonthlyEmi:
+          type: number
+        requestedAmount:
+          type: number
+        tenureMonths:
+          type: integer
+
+    DisbursementRequest:
+      type: object
+      required:
+        - applicationId
+        - amount
+        - recipientAccount
+      properties:
+        applicationId:
+          type: string
+        amount:
+          type: number
+        recipientAccount:
+          type: string
+        forceFailure:
+          type: boolean
+
+    UpdateRouteRequest:
+      type: object
+      required:
+        - pathPattern
+      properties:
+        pathPattern:
+          type: string
+          example: /api/loans
+        mode:
+          type: string
+          enum: [LEGACY, NEW, SHADOW, CANARY]
+          example: NEW
+        canaryWeightPercent:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 25
